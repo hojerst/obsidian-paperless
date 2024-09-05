@@ -65,13 +65,39 @@ class DocumentSelectorModal extends Modal {
 		this.page = 0;
 	}
 
+	async displayThumbnail(imgElement: HTMLImageElement, documentId: string) {
+		const thumbUrl = this.settings.paperlessUrl + '/api/documents/' + documentId + '/thumb/';
+		const result = await requestUrl({
+			url: thumbUrl.toString(),
+			headers: {
+				'Authorization': 'token ' + this.settings.paperlessAuthToken
+			}
+		})	
+		imgElement.src = URL.createObjectURL(new Blob([result.arrayBuffer]));
+	};
+
 	async onOpen() {
 		const {contentEl} = this;
 		if (cachedResult == null) {
 			await refreshCacheFromPaperless(this.settings);
 		}
 
-		console.log(cachedResult.json);
+		const imageDiv = contentEl.createDiv();		
+		const bottomDiv = contentEl.createDiv();
+		let observer = new IntersectionObserver(() => {
+			const startIndex = this.page;
+			let endIndex = this.page + 8;
+			if (endIndex > cachedResult.json['all'].length) {
+				endIndex = cachedResult.json['all'].length;
+			}
+			this.page = endIndex;
+			for (let i = startIndex; i < endIndex; i++) {
+				const imgElement = imageDiv.createEl('img');
+				this.displayThumbnail(imgElement, cachedResult.json['all'][i]);
+			}
+			
+		}, {threshold: [0.1]});
+		observer.observe(bottomDiv);
 	}
 
 	onClose() {

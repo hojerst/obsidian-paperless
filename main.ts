@@ -27,6 +27,17 @@ export default class ObsidianPaperless extends Plugin {
 		});
 
 		this.addCommand({
+			id: 'replace-with-paperless',
+			name: 'Replace url with document',
+			editorCallback: (editor: Editor) => {
+				const documentId = extractDocumentIdFromUrl(editor, this.settings);
+				if (documentId) {
+					createDocument(editor, this.settings, documentId);
+				}
+			}
+		});
+
+		this.addCommand({
 			id: 'force-refresh-cache',
 			name: 'Refresh document cache',
 			callback: () => {
@@ -59,6 +70,16 @@ async function refreshCacheFromPaperless(settings: PluginSettings) {
 		}
 	})
 	cachedResult = result;
+}
+
+function extractDocumentIdFromUrl(editor: Editor, settings: PluginSettings) {
+	try {
+		const selection = editor.getSelection();
+		const documentId = selection.split('api/documents/')[1].split('/preview')[0];
+		return documentId;
+	} catch {
+		return null;
+	}
 }
 
 async function getExistingShareLink(settings: PluginSettings, documentId: string) {
@@ -96,7 +117,17 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 	if (!link) {
 		createShareLink(settings, documentId);
 		link = await getExistingShareLink(settings, documentId);
+		if (link == null) {
+			// Sometimes this takes a while, give it three immediate retries before giving up.
+			for (let i = 0; i < 3; i++) {
+				link = await getExistingShareLink(settings, documentId);
+				if (link) {
+					break;
+				}
+			}
+		}
 	}
+
 	return link;
 }
 

@@ -1,11 +1,15 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 interface PluginSettings {
-	mySetting: string;
+	paperlessUrl: string;
+	paperlessAuthToken: string;
+	documentStoragePath: string;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
-	mySetting: 'default'
+	paperlessUrl: '',
+	paperlessAuthToken: '',
+	documentStoragePath: ''
 }
 
 export default class ObsidianPaperless extends Plugin {
@@ -70,17 +74,33 @@ class SettingTab extends PluginSettingTab {
 
 	display(): void {
 		const {containerEl} = this;
-
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+		.setName('Paperless URL')
+		.setDesc('Full URL to your paperless instance.')
+		.addText(text => text
+			.setValue(this.plugin.settings.paperlessUrl)
+			.onChange(async (value) => {
+				this.plugin.settings.paperlessUrl = value;
+				await this.plugin.saveSettings();
+			}));
+		new Setting(containerEl)
+			.setName('Paperless authentication token')
+			.setDesc('Token obtained using https://docs.paperless-ngx.com/api/#authorization')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setValue(this.plugin.settings.paperlessAuthToken)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.paperlessAuthToken = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Document storage path')
+			.setDesc('Location for stored documents.')
+			.addText(text => text
+				.setValue(this.plugin.settings.documentStoragePath)
+				.onChange(async (value) => {
+					this.plugin.settings.documentStoragePath = value;
 					await this.plugin.saveSettings();
 				}));
 	}

@@ -26,6 +26,14 @@ export default class ObsidianPaperless extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'force-refresh-cache',
+			name: 'Refresh document cache',
+			callback: () => {
+				refreshCacheFromPaperless(this.settings);
+			}
+		});
+
 		this.addSettingTab(new SettingTab(this.app, this));
 	}
 

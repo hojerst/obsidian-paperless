@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting } from 'obsidian';
 
 interface PluginSettings {
 	paperlessUrl: string;
@@ -40,6 +40,19 @@ export default class ObsidianPaperless extends Plugin {
 	}
 }
 
+let cachedResult: RequestUrlResponse;
+
+async function refreshCacheFromPaperless(settings: PluginSettings) {
+	const url = new URL(settings.paperlessUrl + '/api/documents/?format=json');
+	const result = await requestUrl({
+		url: url.toString(),
+		headers: {
+			'Authorization': 'token ' + settings.paperlessAuthToken
+		}
+	})
+	cachedResult = result;
+}
+
 class DocumentSelectorModal extends Modal {
 	editor: Editor;
 	settings: PluginSettings;
@@ -52,9 +65,13 @@ class DocumentSelectorModal extends Modal {
 		this.page = 0;
 	}
 
-	onOpen() {
+	async onOpen() {
 		const {contentEl} = this;
-		contentEl.setText('Woah!');
+		if (cachedResult == null) {
+			await refreshCacheFromPaperless(this.settings);
+		}
+
+		console.log(cachedResult.json);
 	}
 
 	onClose() {

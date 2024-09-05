@@ -93,7 +93,7 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 }
 
 // Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
-async function createDocument(settings: PluginSettings, documentId: string) {
+async function createDocument(editor: Editor, settings: PluginSettings, documentId: string) {
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
@@ -112,7 +112,7 @@ async function createDocument(settings: PluginSettings, documentId: string) {
 		}
 	}
 
-	// TODO: if available, insert file reference to doc
+	editor.replaceSelection('![[' + filename + ']]');
 }
 
 class DocumentSelectorModal extends Modal {
@@ -156,7 +156,7 @@ class DocumentSelectorModal extends Modal {
 			for (let i = startIndex; i < endIndex; i++) {
 				const documentId = cachedResult.json['all'][i];
 				const imgElement = imageDiv.createEl('img');
-				imgElement.onclick = () => createDocument(this.settings, documentId);
+				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);
 				this.displayThumbnail(imgElement, documentId);
 			}
 			

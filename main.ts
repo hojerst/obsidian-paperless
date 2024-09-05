@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting } from 'obsidian';
 
 interface PluginSettings {
 	paperlessUrl: string;
@@ -53,6 +53,68 @@ async function refreshCacheFromPaperless(settings: PluginSettings) {
 	cachedResult = result;
 }
 
+async function getExistingShareLink(settings: PluginSettings, documentId: string) {
+	const url = new URL(settings.paperlessUrl + '/api/documents/' + documentId + '/share_links/?format=json');
+	const result = await requestUrl({
+		url: url.toString(),
+		headers: {
+			'Authorization': 'token ' + settings.paperlessAuthToken
+		}
+	})
+
+	for (var item of result.json) {
+		if (item['expiration'] == null)  {
+			return new URL(settings.paperlessUrl + '/share/' + item['slug']);
+		}
+	}
+	return null;
+}
+
+async function createShareLink(settings: PluginSettings, documentId: string) {
+	const url = new URL(settings.paperlessUrl + '/api/share_links/');
+	const result = await requestUrl({
+		url: url.toString(),
+		method: 'POST',
+		contentType: 'application/json',
+		body: '{"document":' + documentId + ',"file_version":"original"}',
+		headers: {
+			'Authorization': 'token ' + settings.paperlessAuthToken
+		}
+	})
+}
+
+async function getShareLink(settings: PluginSettings, documentId: string) {
+	var link = await getExistingShareLink(settings, documentId);
+	if (!link) {
+		createShareLink(settings, documentId);
+		link = await getExistingShareLink(settings, documentId);
+	}
+	return link;
+}
+
+// Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
+async function createDocument(settings: PluginSettings, documentId: string) {
+	// Create the parent folder
+	const folderPath = normalizePath(settings.documentStoragePath);
+	if (folderPath) {
+		const folderExists = !!(this.app.vault.getAbstractFileByPath(folderPath));
+		if (!folderExists) {
+			await this.app.vault.createFolder(folderPath);
+		}
+	}
+	
+	const filename = 'paperless-' + documentId + '.pdf';
+	const fileExists = !!(this.app.vault.getAbstractFileByPath(folderPath + '/' + filename));
+	if (!fileExists) {
+		const shareLink = await getShareLink(settings, documentId);
+		if (shareLink) {
+			await this.app.vault.create(folderPath + '/' + filename, shareLink.href);
+		}
+	}
+
+	// TODO: if available, insert file reference to doc
+}
+
 class DocumentSelectorModal extends Modal {
 	editor: Editor;
 	settings: PluginSettings;
@@ -92,8 +154,10 @@ class DocumentSelectorModal extends Modal {
 			}
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
+				const documentId = cachedResult.json['all'][i];
 				const imgElement = imageDiv.createEl('img');
-				this.displayThumbnail(imgElement, cachedResult.json['all'][i]);
+				imgElement.onclick = () => createDocument(this.settings, documentId);
+				this.displayThumbnail(imgElement, documentId);
 			}
 			
 		}, {threshold: [0.1]});

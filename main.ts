@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon } from 'obsidian';
 
 interface PluginSettings {
 	paperlessUrl: string;
@@ -60,6 +60,7 @@ export default class ObsidianPaperless extends Plugin {
 }
 
 let cachedResult: RequestUrlResponse;
+let tagCache = new Map();
 
 async function refreshCacheFromPaperless(settings: PluginSettings) {
 	const url = new URL(settings.paperlessUrl + '/api/documents/?format=json');
@@ -70,6 +71,20 @@ async function refreshCacheFromPaperless(settings: PluginSettings) {
 		}
 	})
 	cachedResult = result;
+
+	// Cache data relating to tags
+	const tagUrl = new URL(settings.paperlessUrl + '/api/tags/?format=json');
+	const tagResult = await requestUrl({
+		url: tagUrl.toString(),
+		headers: {
+			"accept": "application/json; version=5",
+			'Authorization': 'token ' + settings.paperlessAuthToken
+		}
+	})
+	for (let i = 0; i < tagResult.json['results'].length; i++) {
+		let current = tagResult.json['results'][i];
+		tagCache.set(current['id'], current);
+	}
 }
 
 function extractDocumentIdFromUrl(editor: Editor, settings: PluginSettings) {
@@ -197,11 +212,24 @@ class DocumentSelectorModal extends Modal {
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
 				const documentId = availableDocumentIds[i];
-				const imageDiv = ( i & 1 ) ? left.createDiv({cls: 'imageDiv'}) : right.createDiv({cls: 'imageDiv'});
+				const overallDiv = ( i & 1 ) ? left.createDiv({cls: 'overallDiv'}) : right.createDiv({cls: 'overallDiv'});
+				const imageDiv = overallDiv.createDiv({cls: 'imageDiv'});
+				const tagDiv = overallDiv.createDiv({cls: 'tagDiv'});
+				const tags = [8, 13]
+				for (let x = 0; x < tags.length; x++) {
+					const currentTag = tagDiv.createDiv();
+					const tagData = tagCache.get(tags[x]);					
+					const tagStr = currentTag.createEl('span', {text: tagData['name']});
+					tagStr.setCssStyles({color: tagData['text_color'], fontSize: '0.7em'});
+					currentTag.setCssStyles({background: tagData['color'], borderRadius: '8px', padding: '2px', marginTop: '1px', marginRight: '5px'})
+				}
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);
 				this.displayThumbnail(imgElement, documentId);
+				overallDiv.createEl('small', { text: 'Placeholder title' });
+				overallDiv.createEl('br');
+				overallDiv.createEl('small', { text: 'Placeholder date' })
 			}
 		}, {threshold: [0.1]});
 		observer.observe(bottomDiv);

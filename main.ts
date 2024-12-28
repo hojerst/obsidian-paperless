@@ -183,7 +183,9 @@ class DocumentSelectorModal extends Modal {
 			await refreshCacheFromPaperless(this.settings);
 		}
 
-		const imageDiv = contentEl.createDiv();		
+		const documentDiv = contentEl.createDiv({cls: 'row'});
+		const left = documentDiv.createDiv({cls: 'column'});
+		const right = documentDiv.createDiv({cls: 'column'});
 		const bottomDiv = contentEl.createDiv();
 		let observer = new IntersectionObserver(() => {
 			const startIndex = this.page;
@@ -194,11 +196,12 @@ class DocumentSelectorModal extends Modal {
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
 				const documentId = cachedResult.json['all'][i];
+				const imageDiv = ( i & 1 ) ? left.createDiv({cls: 'imageDiv'}) : right.createDiv({cls: 'imageDiv'});				;
 				const imgElement = imageDiv.createEl('img');
+				imgElement.width = 260;
 				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);
 				this.displayThumbnail(imgElement, documentId);
 			}
-			
 		}, {threshold: [0.1]});
 		observer.observe(bottomDiv);
 	}

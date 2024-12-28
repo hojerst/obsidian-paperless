@@ -187,16 +187,17 @@ class DocumentSelectorModal extends Modal {
 		const left = documentDiv.createDiv({cls: 'column'});
 		const right = documentDiv.createDiv({cls: 'column'});
 		const bottomDiv = contentEl.createDiv();
+		const availableDocumentIds = cachedResult.json['all'].sort((a:String, b:String) => {return +a - +b}).reverse();
 		let observer = new IntersectionObserver(() => {
 			const startIndex = this.page;
 			let endIndex = this.page + 8;
-			if (endIndex > cachedResult.json['all'].length) {
-				endIndex = cachedResult.json['all'].length;
+			if (endIndex > availableDocumentIds.length) {
+				endIndex = availableDocumentIds.length;
 			}
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
-				const documentId = cachedResult.json['all'][i];
-				const imageDiv = ( i & 1 ) ? left.createDiv({cls: 'imageDiv'}) : right.createDiv({cls: 'imageDiv'});				;
+				const documentId = availableDocumentIds[i];
+				const imageDiv = ( i & 1 ) ? left.createDiv({cls: 'imageDiv'}) : right.createDiv({cls: 'imageDiv'});
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);

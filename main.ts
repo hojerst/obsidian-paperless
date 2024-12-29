@@ -192,6 +192,24 @@ class DocumentSelectorModal extends Modal {
 		imgElement.src = URL.createObjectURL(new Blob([result.arrayBuffer]));
 	};
 
+	async displayTags(tagDiv: HTMLDivElement, documentId: string) {
+		const thumbUrl = this.settings.paperlessUrl + '/api/documents/' + documentId + '/';
+		const result = await requestUrl({
+			url: thumbUrl.toString(),
+			headers: {
+				'Authorization': 'token ' + this.settings.paperlessAuthToken
+			}
+		})
+		const tags = result.json['tags']
+		for (let x = 0; x < tags.length; x++) {
+			const currentTag = tagDiv.createDiv();
+			const tagData = tagCache.get(tags[x]);					
+			const tagStr = currentTag.createEl('span', {text: tagData['name']});
+			tagStr.setCssStyles({color: tagData['text_color'], fontSize: '0.7em'});
+			currentTag.setCssStyles({background: tagData['color'], borderRadius: '8px', padding: '2px', marginTop: '1px', marginRight: '5px'})
+		}
+	};
+
 	async onOpen() {
 		const {contentEl} = this;
 		if (cachedResult == null) {
@@ -215,14 +233,7 @@ class DocumentSelectorModal extends Modal {
 				const overallDiv = ( i & 1 ) ? left.createDiv({cls: 'overallDiv'}) : right.createDiv({cls: 'overallDiv'});
 				const imageDiv = overallDiv.createDiv({cls: 'imageDiv'});
 				const tagDiv = overallDiv.createDiv({cls: 'tagDiv'});
-				const tags = [8, 13]
-				for (let x = 0; x < tags.length; x++) {
-					const currentTag = tagDiv.createDiv();
-					const tagData = tagCache.get(tags[x]);					
-					const tagStr = currentTag.createEl('span', {text: tagData['name']});
-					tagStr.setCssStyles({color: tagData['text_color'], fontSize: '0.7em'});
-					currentTag.setCssStyles({background: tagData['color'], borderRadius: '8px', padding: '2px', marginTop: '1px', marginRight: '5px'})
-				}
+				this.displayTags(tagDiv, documentId);
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);

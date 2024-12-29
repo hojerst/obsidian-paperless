@@ -1,11 +1,3 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
 .overallDiv {
     position: relative;
 }
@@ -16,22 +8,18 @@ If your plugin does not need CSS, delete this file.
     margin-bottom: 3px;
     overflow: hidden;
 }
-  
 .tagDiv {
     position: absolute;
     top: 0;
     right: 0;
 }
-
 .column {
     float: left;
     width: 50%;
-  }
-  
-  /* Clear floats after the columns */
+} 
+/* Clear floats after the columns */
 .row:after {
     content: "";
     display: table;
     clear: both;
   }
-  

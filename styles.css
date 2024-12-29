@@ -11,6 +11,9 @@ If your plugin does not need CSS, delete this file.
 }
 .imageDiv {
     height: 180px;
+    border-radius: 10px;
+    margin-left: 5px;
+    margin-bottom: 3px;
     overflow: hidden;
 }
   

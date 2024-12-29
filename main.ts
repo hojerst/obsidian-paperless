@@ -227,9 +227,6 @@ class DocumentSelectorModal extends Modal {
 				imgElement.width = 260;
 				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);
 				this.displayThumbnail(imgElement, documentId);
-				overallDiv.createEl('small', { text: 'Placeholder title' });
-				overallDiv.createEl('br');
-				overallDiv.createEl('small', { text: 'Placeholder date' })
 			}
 		}, {threshold: [0.1]});
 		observer.observe(bottomDiv);

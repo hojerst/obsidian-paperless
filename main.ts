@@ -41,7 +41,8 @@ export default class ObsidianPaperless extends Plugin {
 			id: 'force-refresh-cache',
 			name: 'Refresh document cache',
 			callback: () => {
-				refreshCacheFromPaperless(this.settings);
+				new Notice('Refreshing paperless cache.');
+				refreshCacheFromPaperless(this.settings, false);
 			}
 		});
 
@@ -62,7 +63,7 @@ export default class ObsidianPaperless extends Plugin {
 let cachedResult: RequestUrlResponse;
 let tagCache = new Map();
 
-async function refreshCacheFromPaperless(settings: PluginSettings) {
+async function refreshCacheFromPaperless(settings: PluginSettings, silent=true) {
 	const url = new URL(settings.paperlessUrl + '/api/documents/?format=json');
 	const result = await requestUrl({
 		url: url.toString(),
@@ -84,6 +85,9 @@ async function refreshCacheFromPaperless(settings: PluginSettings) {
 	for (let i = 0; i < tagResult.json['results'].length; i++) {
 		let current = tagResult.json['results'][i];
 		tagCache.set(current['id'], current);
+	}
+	if(!silent) {
+		new Notice('Paperless cache refresh completed. Found ' + cachedResult.json['all'].length + ' documents and ' + tagCache.size + ' tags.');
 	}
 }
 

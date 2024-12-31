@@ -240,7 +240,10 @@ class DocumentSelectorModal extends Modal {
 				this.displayTags(tagDiv, documentId);
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
-				imgElement.onclick = () => createDocument(this.editor, this.settings, documentId);
+				imgElement.onclick = () => {
+					createDocument(this.editor, this.settings, documentId);
+					overallDiv.setCssStyles({opacity: '0.5'})
+				}
 				this.displayThumbnail(imgElement, documentId);
 			}
 		}, {threshold: [0.1]});

@@ -110,7 +110,7 @@ async function getExistingShareLink(settings: PluginSettings, documentId: string
 		}
 	})
 
-	for (var item of result.json) {
+	for (let item of result.json) {
 		if (item['expiration'] == null)  {
 			return new URL(settings.paperlessUrl + '/share/' + item['slug']);
 		}
@@ -132,7 +132,7 @@ async function createShareLink(settings: PluginSettings, documentId: string) {
 }
 
 async function getShareLink(settings: PluginSettings, documentId: string) {
-	var link = await getExistingShareLink(settings, documentId);
+	let link = await getExistingShareLink(settings, documentId);
 	if (!link) {
 		createShareLink(settings, documentId);
 		link = await getExistingShareLink(settings, documentId);

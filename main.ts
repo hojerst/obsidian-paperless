@@ -234,7 +234,7 @@ class DocumentSelectorModal extends Modal {
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
 				const documentId = availableDocumentIds[i];
-				const overallDiv = ( i & 1 ) ? left.createDiv({cls: 'overallDiv'}) : right.createDiv({cls: 'overallDiv'});
+				const overallDiv = ( i & 1 ) ? right.createDiv({cls: 'overallDiv'}) : left.createDiv({cls: 'overallDiv'});
 				const imageDiv = overallDiv.createDiv({cls: 'imageDiv'});
 				const tagDiv = overallDiv.createDiv({cls: 'tagDiv'});
 				this.displayTags(tagDiv, documentId);

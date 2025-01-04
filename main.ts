@@ -227,7 +227,7 @@ class DocumentSelectorModal extends Modal {
 		const availableDocumentIds = cachedResult.json['all'].sort((a:String, b:String) => {return +a - +b}).reverse();
 		let observer = new IntersectionObserver(() => {
 			const startIndex = this.page;
-			let endIndex = this.page + 8;
+			let endIndex = this.page + 16;
 			if (endIndex > availableDocumentIds.length) {
 				endIndex = availableDocumentIds.length;
 			}

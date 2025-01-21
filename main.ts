@@ -220,9 +220,9 @@ class DocumentSelectorModal extends Modal {
 			await refreshCacheFromPaperless(this.settings);
 		}
 
-		const documentDiv = contentEl.createDiv({cls: 'row'});
-		const left = documentDiv.createDiv({cls: 'column'});
-		const right = documentDiv.createDiv({cls: 'column'});
+		const documentDiv = contentEl.createDiv({cls: 'obsidian-paperless-row'});
+		const left = documentDiv.createDiv({cls: 'obsidian-paperless-column'});
+		const right = documentDiv.createDiv({cls: 'obsidian-paperless-column'});
 		const bottomDiv = contentEl.createDiv();
 		const availableDocumentIds = cachedResult.json['all'].sort((a:String, b:String) => {return +a - +b}).reverse();
 		let observer = new IntersectionObserver(() => {
@@ -234,9 +234,9 @@ class DocumentSelectorModal extends Modal {
 			this.page = endIndex;
 			for (let i = startIndex; i < endIndex; i++) {
 				const documentId = availableDocumentIds[i];
-				const overallDiv = ( i & 1 ) ? right.createDiv({cls: 'overallDiv'}) : left.createDiv({cls: 'overallDiv'});
-				const imageDiv = overallDiv.createDiv({cls: 'imageDiv'});
-				const tagDiv = overallDiv.createDiv({cls: 'tagDiv'});
+				const overallDiv = ( i & 1 ) ? right.createDiv({cls: 'obsidian-paperless-overallDiv'}) : left.createDiv({cls: 'obsidian-paperless-overallDiv'});
+				const imageDiv = overallDiv.createDiv({cls: 'obsidian-paperless-imageDiv'});
+				const tagDiv = overallDiv.createDiv({cls: 'obsidian-paperless-tagDiv'});
 				this.displayTags(tagDiv, documentId);
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;

@@ -28,7 +28,7 @@ export default class ObsidianPaperless extends Plugin {
 
 		this.addCommand({
 			id: 'replace-with-paperless',
-			name: 'Replace url with document',
+			name: 'Replace URL with document',
 			editorCallback: (editor: Editor) => {
 				const documentId = extractDocumentIdFromUrl(editor, this.settings);
 				if (documentId) {

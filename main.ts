@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon, TFolder, TFile } from 'obsidian';
 
 interface PluginSettings {
 	paperlessUrl: string;
@@ -155,14 +155,16 @@ async function createDocument(editor: Editor, settings: PluginSettings, document
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
-		const folderExists = !!(this.app.vault.getAbstractFileByPath(folderPath));
+		const folderRef = this.app.vault.getAbstractFileByPath(folderPath);
+		const folderExists = !!(folderRef) && folderRef instanceof TFolder;
 		if (!folderExists) {
 			await this.app.vault.createFolder(folderPath);
 		}
 	}
 	
 	const filename = 'paperless-' + documentId + '.pdf';
-	const fileExists = !!(this.app.vault.getAbstractFileByPath(folderPath + '/' + filename));
+	const fileRef = this.app.vault.getAbstractFileByPath(folderPath + '/' + filename); 
+	const fileExists = !!(fileRef) && fileRef instanceof TFile;
 	if (!fileExists) {
 		const shareLink = await getShareLink(settings, documentId);
 		if (shareLink) {

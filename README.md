@@ -1,7 +1,5 @@
 # Obsidian ❤️ Paperless-ngx
 
-⚠️ Under construction - this plugin is not ready for any public consumption ⚠️
-
 This plugin allows users to easily insert PDFs from their self-hosted paperless-ngx instance into their Obsidian notes.
 
 ## Features

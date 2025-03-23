@@ -63,6 +63,25 @@ export default class ObsidianPaperless extends Plugin {
 let cachedResult: RequestUrlResponse;
 let tagCache = new Map();
 
+async function testConnection(settings: PluginSettings) {
+	new Notice("Testing connection to " + settings.paperlessUrl)
+	const url = new URL(settings.paperlessUrl + '/api/documents/');
+	try {
+		const result = await requestUrl({
+			url: url.toString(),
+			headers: {
+				'Authorization': 'token ' + settings.paperlessAuthToken
+			}
+		})
+		if (result.status == 200 && result.json['results']) {
+			new Notice("Connection successful")
+		}
+	} catch(exception) {
+		new Notice("Failed to connect to " + settings.paperlessUrl + " - check the console for additional information.")
+		console.log("Failed connection to " + url + " with error: " + exception)
+	}	
+}
+
 async function refreshCacheFromPaperless(settings: PluginSettings, silent=true) {
 	const url = new URL(settings.paperlessUrl + '/api/documents/?format=json');
 	const result = await requestUrl({
@@ -297,5 +316,14 @@ class SettingTab extends PluginSettingTab {
 					this.plugin.settings.documentStoragePath = value;
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+			.setName('Test connection')
+			.setDesc('Validate the connection between obsidian and your paperless instance.')
+			.addButton(async (button) => {
+				button.setButtonText("Test connection")
+				button.onClick(async() => {
+					testConnection(this.plugin.settings)
+				})
+			})
 	}
 }

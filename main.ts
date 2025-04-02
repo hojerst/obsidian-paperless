@@ -122,32 +122,49 @@ function extractDocumentIdFromUrl(editor: Editor, settings: PluginSettings) {
 
 async function getExistingShareLink(settings: PluginSettings, documentId: string) {
 	const url = new URL(settings.paperlessUrl + '/api/documents/' + documentId + '/share_links/?format=json');
-	const result = await requestUrl({
-		url: url.toString(),
-		headers: {
-			'Authorization': 'token ' + settings.paperlessAuthToken
+	let result;
+	try {
+		result = await requestUrl({
+			url: url.toString(),
+			headers: {
+				'Authorization': 'token ' + settings.paperlessAuthToken
+			}
+		})
+		if (result.status != 200) {
+			console.error("An exception occurred in getExistingShareLink. Response: " + result);
+			return null;
 		}
-	})
-
-	for (let item of result.json) {
-		if (item['expiration'] == null)  {
-			return new URL(settings.paperlessUrl + '/share/' + item['slug']);
+		for (let item of result.json) {
+			if (item['expiration'] == null)  {
+				return new URL(settings.paperlessUrl + '/share/' + item['slug']);
+			}
 		}
+	} catch (e) {
+		console.error("An exception occurred in getExistingShareLink. Exception: " + e + " and response " + result);
 	}
+
 	return null;
 }
 
 async function createShareLink(settings: PluginSettings, documentId: string) {
 	const url = new URL(settings.paperlessUrl + '/api/share_links/');
-	const result = await requestUrl({
-		url: url.toString(),
-		method: 'POST',
-		contentType: 'application/json',
-		body: '{"document":' + documentId + ',"file_version":"original"}',
-		headers: {
-			'Authorization': 'token ' + settings.paperlessAuthToken
+	let result;
+	try {
+		result = await requestUrl({
+			url: url.toString(),
+			method: 'POST',
+			contentType: 'application/json',
+			body: '{"document":' + documentId + ',"file_version":"original"}',
+			headers: {
+				'Authorization': 'token ' + settings.paperlessAuthToken
+			}
+		})
+		if (result.status != 201) {
+			console.error("An exception occurred in createShareLink. Response: " + result);
 		}
-	})
+	} catch (e) {
+		console.error("An exception occurred in createShareLink. Exception: " + e + " and response " + result);
+	}
 }
 
 async function getShareLink(settings: PluginSettings, documentId: string) {
@@ -156,8 +173,8 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 		createShareLink(settings, documentId);
 		link = await getExistingShareLink(settings, documentId);
 		if (link == null) {
-			// Sometimes this takes a while, give it three immediate retries before giving up.
-			for (let i = 0; i < 3; i++) {
+			// Sometimes this takes a while, give it five immediate retries before giving up.
+			for (let i = 0; i < 5; i++) {
 				link = await getExistingShareLink(settings, documentId);
 				if (link) {
 					break;

@@ -150,7 +150,7 @@ function parsePaperlessUrlAtCursor(editor: Editor, settings: PluginSettings): Pa
 
 		// find documentId in the selection using a regex
 		const normalizedUrl = new URL(settings.paperlessUrl);
-		const quotedUrl = escapeRegExp(normalizedUrl);
+		const quotedUrl = escapeRegExp(normalizedUrl.toString());
 		const regex = quotedUrl +
 			"(?:" +
 			"api/documents/(?<documentId>\\d+)/preview" +

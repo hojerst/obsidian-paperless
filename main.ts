@@ -323,7 +323,8 @@ class SettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.paperlessAuthToken = value;
 					await this.plugin.saveSettings();
-				}));
+				})
+				.inputEl.type = 'password');
 		new Setting(containerEl)
 			.setName('Document storage path')
 			.setDesc('Location for stored documents.')

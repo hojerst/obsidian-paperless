@@ -1,16 +1,18 @@
 import { App, Editor, EditorRange, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon, TFolder, TFile } from 'obsidian';
-import { escapeRegExp } from 'lodash';
+import { escapeRegExp, reduce } from 'lodash';
 
 interface PluginSettings {
 	paperlessUrl: string;
 	paperlessAuthToken: string;
 	documentStoragePath: string;
+	linkTextFormat: string;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
 	paperlessUrl: '',
 	paperlessAuthToken: '',
-	documentStoragePath: ''
+	documentStoragePath: '',
+	linkTextFormat: '{{title}}'
 }
 
 export default class ObsidianPaperless extends Plugin {
@@ -29,11 +31,22 @@ export default class ObsidianPaperless extends Plugin {
 
 		this.addCommand({
 			id: 'replace-with-paperless',
-			name: 'Replace URL with document',
+			name: 'Replace URL with document (Embedded)',
 			editorCallback: (editor: Editor) => {
 				const paperlessUrl = parsePaperlessUrlAtCursor(editor, this.settings);
 				if (paperlessUrl) {
-					createDocument(editor, this.settings, paperlessUrl);
+					createDocument(editor, this.settings, paperlessUrl, false);
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'replace-with-paperless-link',
+			name: 'Replace URL with document (Link)',
+			editorCallback: (editor: Editor) => {
+				const paperlessUrl = parsePaperlessUrlAtCursor(editor, this.settings);
+				if (paperlessUrl) {
+					createDocument(editor, this.settings, paperlessUrl, true);
 				}
 			}
 		});
@@ -171,6 +184,26 @@ function parsePaperlessUrlAtCursor(editor: Editor, settings: PluginSettings): Pa
 	}
 }
 
+async function getDocumentInfo(settings: PluginSettings, documentId: string) {
+	const url = new URL(settings.paperlessUrl + '/api/documents/' + documentId + '/?format=json');
+	let result;
+	try {
+		result = await requestUrl({
+			url: url.toString(),
+			headers: {
+				'Authorization': 'token ' + settings.paperlessAuthToken
+			}
+		})
+		if (result.status != 200) {
+			console.error("An exception occurred in getDocumentInfo. Response: " + result);
+			return null;
+		}
+	} catch (e) {
+		console.error("An exception occurred in getDocumentInfo. Exception: " + e + " and response " + result);
+	}
+	return result;
+}
+
 async function getExistingShareLink(settings: PluginSettings, documentId: string) {
 	const url = new URL(settings.paperlessUrl + '/api/documents/' + documentId + '/share_links/?format=json');
 	let result;
@@ -237,8 +270,20 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 	return link;
 }
 
+function formatLinkText(settings: PluginSettings, info: RequestUrlResponse): string {
+	const format = settings.linkTextFormat;
+
+	// We use a function for lazy evaluation of the data
+	const data: Record<string, Function> = {
+		title: () => info.json.title,
+		page_count: () => info.json.page_count,
+	};
+
+	return format.replace(/{{([^}]*)}}/g, (_, key) => data[key] ? data[key]() : "{{" + key + "}}");
+}
+
 // Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
-async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessUrl) {
+async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessUrl, isLink: boolean) {
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
@@ -259,7 +304,16 @@ async function createDocument(editor: Editor, settings: PluginSettings, paperles
 		}
 	}
 
-	editor.replaceRange('![[' + filename + ']]', paperlessUrl.range.from, paperlessUrl.range.to);
+	if (isLink) {
+		const info = await getDocumentInfo(settings, paperlessUrl.documentId);
+		if (info == null) {
+			editor.replaceRange('[[' + filename + ']]', paperlessUrl.range.from, paperlessUrl.range.to);
+		} else {
+			editor.replaceRange('[[' + filename + '|' + formatLinkText(settings, info) + ']]', paperlessUrl.range.from, paperlessUrl.range.to);
+		}
+	} else {
+		editor.replaceRange('![[' + filename + ']]', paperlessUrl.range.from, paperlessUrl.range.to);
+	}
 }
 
 class DocumentSelectorModal extends Modal {
@@ -330,7 +384,7 @@ class DocumentSelectorModal extends Modal {
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => {
-					createDocument(this.editor, this.settings, documentId);
+					createDocument(this.editor, this.settings, documentId, false);
 					overallDiv.setCssStyles({opacity: '0.5'})
 				}
 				this.displayThumbnail(imgElement, documentId);
@@ -383,6 +437,15 @@ class SettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.documentStoragePath)
 				.onChange(async (value) => {
 					this.plugin.settings.documentStoragePath = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Link text format')
+			.setDesc('Link text format for generated links. Allowed Placeholders: {{title}}, {{page_count}}')
+			.addText(text => text
+				.setValue(this.plugin.settings.linkTextFormat)
+				.onChange(async (value) => {
+					this.plugin.settings.linkTextFormat = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)

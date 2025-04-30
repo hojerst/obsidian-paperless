@@ -33,7 +33,7 @@ export default class ObsidianPaperless extends Plugin {
 			id: 'replace-with-paperless',
 			name: 'Replace URL with document (Embedded)',
 			editorCallback: (editor: Editor) => {
-				const paperlessUrl = parsePaperlessUrlAtCursor(editor, this.settings);
+				const paperlessUrl = searchPaperlessUrl(editor, this.settings);
 				if (paperlessUrl) {
 					createDocument(editor, this.settings, paperlessUrl, false);
 				}
@@ -151,37 +151,37 @@ interface PaperlessUrl {
 	range: EditorRange;
 }
 
-/// Parse the Paperless URL from the cursor position
-function parsePaperlessUrlAtCursor(editor: Editor, settings: PluginSettings): PaperlessUrl | null {
-	try {
-		const wordRange = wordAtCursor(editor);
-		if (wordRange === null) {
-			return null;
-		}
-
-		const text = editor.getRange(wordRange.from, wordRange.to)
-
-		// find documentId in the selection using a regex
-		const normalizedUrl = new URL(settings.paperlessUrl);
-		const quotedUrl = escapeRegExp(normalizedUrl.toString());
-		const regex = quotedUrl +
-			"(?:" +
-			"api/documents/(?<documentId>\\d+)/preview" +
-			"|documents/(?<documentId>\\d+)/details" +
-			")";
-
-		const match = text.match(regex);
-		if (!match || !match.groups) {
-			return null;
-		}
-
-		return {
-			documentId: match.groups.documentId,
-			range: wordRange
-		};
-	} catch {
+/// Search the Paperless URL from selection / cursor position
+function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessUrl | null {
+	const wordRange = wordAtCursor(editor);
+	if (wordRange === null) {
 		return null;
 	}
+
+	const text = editor.getRange(wordRange.from, wordRange.to)
+
+	// find documentId in the selection using a regex
+	const normalizedUrl = new URL(settings.paperlessUrl).toString();
+	const quotedUrl = escapeRegExp(normalizedUrl);
+	const urlVariants = [
+		`${quotedUrl}api/documents/(\\d+)/preview`,
+		`${quotedUrl}documents/(\\d+)/details`
+	];
+
+	// find a matching URL variant
+	for (const regex of urlVariants) {
+		console.log("Regex: " + regex);
+		const match = text.match(regex);
+		if (match) {
+			return {
+				documentId: match[1],
+				range: wordRange
+			};
+		}
+	}
+
+	// nothing found
+	return null;
 }
 
 async function getDocumentInfo(settings: PluginSettings, documentId: string) {

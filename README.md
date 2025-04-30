@@ -1,11 +1,12 @@
 # Obsidian ❤️ Paperless-ngx
 
-This plugin allows users to easily insert PDFs from their self-hosted paperless-ngx instance into their Obsidian notes.
+This plugin allows users to easily insert PDFs from their self-hosted paperless-ngx instance into their Obsidian notes. The PDFs are not stored locally, but are instead externally loaded directly from your paperless-ngx instance.
 
 ## Features
 
 - View all documents on your paperless-ngx instance from within the comfort of your Obsidian vault.
 - One-click insertion of one or many documents into your vault.
+- Reduce vault size by using this plugin to remotely reference PDFs within your paperless-ngx instance.
 
 ## Prerequisites 
 This assumes you have a working version of [paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) hosted. It does not necessarily need to be remotely accessible. This decision is left up to the reader. 

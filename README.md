@@ -50,6 +50,6 @@ The standard insertion command. Please note you must have an open editor focused
 The "Insert document" command caches some information such as available documents, tags, and other metadata when it is first run. If you find that new documents or changes are not showing up in the document selection modal, running this command will refresh the caches.
 
 #### Replace URL with document
-This command replaces a highlighted url in a note with an embed of the document. To use:
-1. Highlight a paperless url in a note. The url should be of the form `http://ip:port/api/documents/id/preview/`
+This command replaces a url in a note with an embed of the document. To use:
+1. Move your cursor onto a paperless url in a note. The url should be of the form `http://ip:port/api/documents/id/preview/` or `http://ip:port/documents/id/details`
 1. Run this command

@@ -1,4 +1,5 @@
-import { App, Editor, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon, TFolder, TFile } from 'obsidian';
+import { App, Editor, EditorRange, MarkdownView, Modal, normalizePath, Notice, Plugin, PluginSettingTab, requestUrl, RequestUrlResponse, Setting, setIcon, TFolder, TFile } from 'obsidian';
+import { escapeRegExp } from 'lodash';
 
 interface PluginSettings {
 	paperlessUrl: string;
@@ -30,9 +31,9 @@ export default class ObsidianPaperless extends Plugin {
 			id: 'replace-with-paperless',
 			name: 'Replace URL with document',
 			editorCallback: (editor: Editor) => {
-				const documentId = extractDocumentIdFromUrl(editor, this.settings);
-				if (documentId) {
-					createDocument(editor, this.settings, documentId);
+				const paperlessUrl = searchPaperlessUrl(editor, this.settings);
+				if (paperlessUrl) {
+					createDocument(editor, this.settings, paperlessUrl);
 				}
 			}
 		});
@@ -110,14 +111,64 @@ async function refreshCacheFromPaperless(settings: PluginSettings, silent=true) 
 	}
 }
 
-function extractDocumentIdFromUrl(editor: Editor, settings: PluginSettings) {
-	try {
-		const selection = editor.getSelection();
-		const documentId = selection.split('api/documents/')[1].split('/preview')[0];
-		return documentId;
-	} catch {
+/// Find the word under the cursor (we can't use editor.wordAt because we want everything between two whitespace characters)
+function wordAtCursor(editor: Editor): EditorRange | null {
+	const cursor = editor.getCursor();
+	const line = editor.getLine(cursor.line);
+
+	const wordRegex = /\S+/g;
+	let match: RegExpExecArray | null;
+
+	while ((match = wordRegex.exec(line)) !== null) {
+		const start = match.index;
+		const end = start + match[0].length;
+		if (cursor.ch >= start && cursor.ch <= end) {
+			return {
+				from: { line: cursor.line, ch: start },
+				to: { line: cursor.line, ch: end }
+			};
+		}
+	}
+
+	return null;
+}
+
+interface PaperlessUrl {
+	documentId: string;
+	range: EditorRange;
+}
+
+/// Search the Paperless URL from selection / cursor position
+function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessUrl | null {
+	const wordRange = wordAtCursor(editor);
+	if (wordRange === null) {
 		return null;
 	}
+
+	const text = editor.getRange(wordRange.from, wordRange.to)
+
+	// find documentId in the selection using a regex
+	const normalizedUrl = new URL(settings.paperlessUrl).toString();
+	const quotedUrl = escapeRegExp(normalizedUrl);
+	const urlVariants = [
+		`${quotedUrl}api/documents/(\\d+)/preview`,
+		`${quotedUrl}documents/(\\d+)/details`
+	];
+
+	// find a matching URL variant
+	for (const regex of urlVariants) {
+		console.log("Regex: " + regex);
+		const match = text.match(regex);
+		if (match) {
+			return {
+				documentId: match[1],
+				range: wordRange
+			};
+		}
+	}
+
+	// nothing found
+	return null;
 }
 
 async function getExistingShareLink(settings: PluginSettings, documentId: string) {
@@ -187,7 +238,7 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 }
 
 // Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
-async function createDocument(editor: Editor, settings: PluginSettings, documentId: string) {
+async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessUrl) {
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
@@ -198,17 +249,17 @@ async function createDocument(editor: Editor, settings: PluginSettings, document
 		}
 	}
 	
-	const filename = 'paperless-' + documentId + '.pdf';
+	const filename = 'paperless-' + paperlessUrl.documentId + '.pdf';
 	const fileRef = this.app.vault.getAbstractFileByPath(folderPath + '/' + filename); 
 	const fileExists = !!(fileRef) && fileRef instanceof TFile;
 	if (!fileExists) {
-		const shareLink = await getShareLink(settings, documentId);
+		const shareLink = await getShareLink(settings, paperlessUrl.documentId);
 		if (shareLink) {
 			await this.app.vault.create(folderPath + '/' + filename, shareLink.href);
 		}
 	}
 
-	editor.replaceSelection('![[' + filename + ']]');
+	editor.replaceRange('![[' + filename + ']]', paperlessUrl.range.from, paperlessUrl.range.to);
 }
 
 class DocumentSelectorModal extends Modal {

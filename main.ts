@@ -330,7 +330,16 @@ class DocumentSelectorModal extends Modal {
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => {
-					createDocument(this.editor, this.settings, documentId);
+					const cursor = this.editor.getCursor();
+					const line = this.editor.getLine(cursor.line);				
+					const documentInfo: PaperlessUrl = {
+						documentId: documentId,
+						range: { 
+							from: { line: cursor.line, ch: cursor.ch },
+							to: { line: cursor.line, ch: cursor.ch }
+						}
+					}
+					createDocument(this.editor, this.settings, documentInfo);
 					overallDiv.setCssStyles({opacity: '0.5'})
 				}
 				this.displayThumbnail(imgElement, documentId);

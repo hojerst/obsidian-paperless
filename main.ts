@@ -7,6 +7,11 @@ interface PluginSettings {
 	documentStoragePath: string;
 }
 
+interface PaperlessInsertionData {
+	documentId: string;
+	range: EditorRange;
+}
+
 const DEFAULT_SETTINGS: PluginSettings = {
 	paperlessUrl: '',
 	paperlessAuthToken: '',
@@ -133,13 +138,8 @@ function wordAtCursor(editor: Editor): EditorRange | null {
 	return null;
 }
 
-interface PaperlessUrl {
-	documentId: string;
-	range: EditorRange;
-}
-
 /// Search the Paperless URL from selection / cursor position
-function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessUrl | null {
+function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessInsertionData | null {
 	const wordRange = wordAtCursor(editor);
 	if (wordRange === null) {
 		return null;
@@ -238,7 +238,7 @@ async function getShareLink(settings: PluginSettings, documentId: string) {
 }
 
 // Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
-async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessUrl) {
+async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessInsertionData) {
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
@@ -332,7 +332,7 @@ class DocumentSelectorModal extends Modal {
 				imgElement.onclick = () => {
 					const cursor = this.editor.getCursor();
 					const line = this.editor.getLine(cursor.line);				
-					const documentInfo: PaperlessUrl = {
+					const documentInfo: PaperlessInsertionData = {
 						documentId: documentId,
 						range: { 
 							from: { line: cursor.line, ch: cursor.ch },

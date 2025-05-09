@@ -5,7 +5,11 @@ interface PluginSettings {
 	paperlessUrl: string;
 	paperlessAuthToken: string;
 	documentStoragePath: string;
-	linkTextFormat: string;
+}
+
+interface PaperlessInsertionData {
+	documentId: string;
+	range: EditorRange;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
@@ -146,13 +150,8 @@ function wordAtCursor(editor: Editor): EditorRange | null {
 	return null;
 }
 
-interface PaperlessUrl {
-	documentId: string;
-	range: EditorRange;
-}
-
 /// Search the Paperless URL from selection / cursor position
-function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessUrl | null {
+function searchPaperlessUrl(editor: Editor, settings: PluginSettings): PaperlessInsertionData | null {
 	const wordRange = wordAtCursor(editor);
 	if (wordRange === null) {
 		return null;
@@ -283,7 +282,7 @@ function formatLinkText(settings: PluginSettings, info: RequestUrlResponse): str
 }
 
 // Heavily inspired by https://github.com/RyotaUshio/obsidian-pdf-plus/blob/127ea5b94bb8f8fa0d4c66bcd77b3809caa50b21/src/modals/external-pdf-modals.ts#L249
-async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessUrl, isLink: boolean) {
+async function createDocument(editor: Editor, settings: PluginSettings, paperlessUrl: PaperlessInsertionData, isLink: boolean) {
 	// Create the parent folder
 	const folderPath = normalizePath(settings.documentStoragePath);
 	if (folderPath) {
@@ -384,7 +383,16 @@ class DocumentSelectorModal extends Modal {
 				const imgElement = imageDiv.createEl('img');
 				imgElement.width = 260;
 				imgElement.onclick = () => {
-					createDocument(this.editor, this.settings, documentId, false);
+					const cursor = this.editor.getCursor();
+					const line = this.editor.getLine(cursor.line);				
+					const documentInfo: PaperlessInsertionData = {
+						documentId: documentId,
+						range: { 
+							from: { line: cursor.line, ch: cursor.ch },
+							to: { line: cursor.line, ch: cursor.ch }
+						}
+					}
+					createDocument(this.editor, this.settings, documentInfo);
 					overallDiv.setCssStyles({opacity: '0.5'})
 				}
 				this.displayThumbnail(imgElement, documentId);

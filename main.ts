@@ -5,6 +5,7 @@ interface PluginSettings {
 	paperlessUrl: string;
 	paperlessAuthToken: string;
 	documentStoragePath: string;
+	linkTextFormat: string;
 }
 
 interface PaperlessInsertionData {
@@ -384,15 +385,14 @@ class DocumentSelectorModal extends Modal {
 				imgElement.width = 260;
 				imgElement.onclick = () => {
 					const cursor = this.editor.getCursor();
-					const line = this.editor.getLine(cursor.line);				
 					const documentInfo: PaperlessInsertionData = {
 						documentId: documentId,
 						range: { 
-							from: { line: cursor.line, ch: cursor.ch },
-							to: { line: cursor.line, ch: cursor.ch }
+							from: cursor,
+							to: cursor
 						}
 					}
-					createDocument(this.editor, this.settings, documentInfo);
+					createDocument(this.editor, this.settings, documentInfo, false);
 					overallDiv.setCssStyles({opacity: '0.5'})
 				}
 				this.displayThumbnail(imgElement, documentId);

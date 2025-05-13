@@ -49,7 +49,7 @@ export default class ObsidianPaperless extends Plugin {
 			id: 'replace-with-paperless-link',
 			name: 'Replace URL with document (Link)',
 			editorCallback: (editor: Editor) => {
-				const paperlessUrl = parsePaperlessUrlAtCursor(editor, this.settings);
+				const paperlessUrl = searchPaperlessUrl(editor, this.settings);
 				if (paperlessUrl) {
 					createDocument(editor, this.settings, paperlessUrl, true);
 				}

@@ -1,7 +1,7 @@
 {
 	"id": "paperless",
 	"name": "Paperless",
-	"version": "0.1.6",
+	"version": "0.2.0-patch.1",
 	"minAppVersion": "0.15.0",
 	"description": "Link your paperless-ngx documents within your vault.",
 	"author": "Talal Abou Haiba",
